@@ -1,0 +1,4 @@
+# variables:
+os_version: ubuntu
+architecture: amd64
+docker_version_code_name: bionic
