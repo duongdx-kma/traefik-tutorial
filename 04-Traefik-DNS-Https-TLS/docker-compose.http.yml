@@ -1,7 +1,6 @@
 version: "3.3"
 
 services:
-
   traefik:
     image: "traefik:v3.0"
     ports:
@@ -14,7 +13,10 @@ services:
       #####################################
       # this file using traefik.yml
       #####################################
-      - ./traefik.yml:/etc/traefik/traefik.yml
+      - ./traefik.http.yml:/etc/traefik/traefik.yml
+    networks:
+      - traefik-net
+      - frontend-net
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dashboard.rule=Host(`dashboard.traefik.duongdx.com`)"
@@ -23,9 +25,36 @@ services:
 
   frontend:
     image: "duong1200798/socket_app_react:latest"
+    networks:
+      - frontend-net
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`frontend.duongdx.com`)"
       - "traefik.http.routers.frontend.entrypoints=web"
       - "traefik.http.routers.frontend.service=frontend"
       - "traefik.http.services.frontend.loadbalancer.server.port=8080"
+
+  # config cloudflare tunnel
+  cloudflaretunnel:
+    image: cloudflare/cloudflared:latest
+    # restart: unless-stoped
+    # container_name: cloudflare-tunnel
+    environment:
+      - TUNNEL_TOKEN=$(cat token.pem)
+    command: tunnel run
+    # TUNNEL_TOKEN=$(cat token.pem)
+    # tunnel --no-autoupdat run --token xxxx
+    volumes:
+      - ./cloudflare-tunnel.yml:/etc/cloudflared/config.yml
+    networks:
+      - traefik-net
+      - frontend-net
+
+# if traefik don't have access to this network => error
+networks:
+  traefik-net:
+    driver: overlay
+
+  frontend-net:
+    driver: overlay
+

@@ -19,8 +19,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.dashboard.rule=Host(`dashboard.traefik.duongdx.com`)"
       - "traefik.http.routers.dashboard.entrypoints=web"
-      - "traefik.http.routers.dashboard.service=dashboard"
-      - "traefik.http.services.dashboard.loadbalancer.server.port=80"
+      - "traefik.http.routers.dashboard.service=api@internal"
+
   frontend:
     image: "duong1200798/socket_app_react:latest"
     labels:
