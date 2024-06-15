@@ -16,7 +16,6 @@ Vagrant.configure("2") do |config|
         vb.cpus = 3
       end
       node.vm.hostname = "traefik0#{i}"
-      node.vm.synced_folder "./", "/tmp/traefik", :mount_options => ["dmode=777", "fmode=666"]
       node.vm.network :private_network, ip: IP_NW + "#{TRAEFIK_IP_START + i}"
       node.vm.network "forwarded_port", guest: 22, host: "#{TRAEFIK_HOST_PORT + i}"
       # node.vm.provision "setup-dns", type: "shell", :path => "../ubuntu/update-dns.sh"

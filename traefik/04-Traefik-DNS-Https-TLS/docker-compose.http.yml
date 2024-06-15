@@ -1,0 +1,51 @@
+version: "3.3"
+
+services:
+  traefik:
+    image: "traefik:v3.0"
+    ports:
+      - "80:80"
+      - "8080:8080"
+      - "443:443"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro # config localtime
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      #####################################
+      # this file using traefik.yml
+      #####################################
+      - ./data/acme.json:/letsencrypt/acme.json
+      - ./traefik.http.yml:/etc/traefik/traefik.yml
+    networks:
+      - traefik-net
+      - frontend-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`dashboard.traefik.duongdx.com`) || Host(`dashboard.traefik.tunnel.duongdx.com`)"
+      - "traefik.http.routers.dashboard.entrypoints=webSecure"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.tls.certresolver=my-resolver"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_DASHBOARD_CREDENTIALS}"
+
+  frontend:
+    image: "duong1200798/socket_app_react:latest"
+    networks:
+      - frontend-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`frontend.duongdx.com`) || Host(`frontend.tunnel.duongdx.com`)"
+      - "traefik.http.routers.frontend.entrypoints=webSecure"
+      - "traefik.http.routers.frontend.service=frontend"
+      - "traefik.http.services.frontend.loadbalancer.server.port=8080"
+      #  make https
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=my-resolver"
+
+# if traefik don't have access to this network => error
+networks:
+  traefik-net:
+    driver: overlay
+
+  frontend-net:
+    driver: overlay
+

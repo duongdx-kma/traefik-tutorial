@@ -13,15 +13,19 @@ services:
       #####################################
       # this file using traefik.yml
       #####################################
+      - ./data/acme.json:/letsencrypt/acme.json
       - ./traefik.http.yml:/etc/traefik/traefik.yml
     networks:
       - traefik-net
       - frontend-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dashboard.rule=Host(`dashboard.traefik.duongdx.com`)"
-      - "traefik.http.routers.dashboard.entrypoints=web"
+      - "traefik.http.routers.dashboard.rule=Host(`dashboard.traefik.duongdx.com`) || Host(`dashboard.traefik.tunnel.duongdx.com`)"
+      - "traefik.http.routers.dashboard.entrypoints=webSecure"
       - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.tls.certresolver=my-resolver"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_DASHBOARD_CREDENTIALS}"
 
   frontend:
     image: "duong1200798/socket_app_react:latest"
@@ -29,10 +33,13 @@ services:
       - frontend-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`frontend.duongdx.com`)"
-      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.rule=Host(`frontend.duongdx.com`) || Host(`frontend.tunnel.duongdx.com`)"
+      - "traefik.http.routers.frontend.entrypoints=webSecure"
       - "traefik.http.routers.frontend.service=frontend"
       - "traefik.http.services.frontend.loadbalancer.server.port=8080"
+      #  make https
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=my-resolver"
 
   # config cloudflare tunnel
   cloudflaretunnel:
@@ -40,7 +47,7 @@ services:
     # restart: unless-stoped
     # container_name: cloudflare-tunnel
     environment:
-      - TUNNEL_TOKEN=$(cat token.pem)
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
     command: tunnel run
     # TUNNEL_TOKEN=$(cat token.pem)
     # tunnel --no-autoupdat run --token xxxx

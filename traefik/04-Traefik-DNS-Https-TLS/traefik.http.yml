@@ -33,10 +33,10 @@ log:
 ################################################################
 # Traefik http
 ################################################################
-# certificatesResolvers:
-#   my-resolver:
-#     acme:
-#       email: xuanduong.kma@gmail.com
-#       storage: /letsencrypt/acme.json
-#       httpChallenge:
-#         entryPoint: web
+certificatesResolvers:
+  my-resolver:
+    acme:
+      email: xuanduong.kma@gmail.com
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web

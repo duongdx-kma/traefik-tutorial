@@ -2,7 +2,7 @@ tunnel: 797533f0-3dee-4eea-8414-0ea4b77e6af6
 
 ingress:
   - hostname: dashboard.traefik.duongdx.com
-    service: http://traefik:8080
+    service: http://traefik:80
   - hostname: frontend.duongdx.com
     service: http://traefik:80
   - service: http_status:404
