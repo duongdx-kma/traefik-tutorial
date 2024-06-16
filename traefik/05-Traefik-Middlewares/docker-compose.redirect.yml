@@ -1,0 +1,161 @@
+version: "3.3"
+
+services:
+  traefik:
+    image: "traefik:v3.0"
+    ports:
+      - "80:80"
+      - "8080:8080"
+      - "443:443"
+    environment:
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+      - CF_API_EMAIL=${CF_API_EMAIL}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro # config localtime
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      #===================================================
+      # this file using traefik.yml
+      #===================================================
+      - /tmp/acme.json:/letsencrypt/acme.json
+      - ./traefik.yml:/etc/traefik/traefik.yml
+    networks:
+      - traefik-net
+      - frontend-net
+    labels:
+      - "traefik.enable=true"
+      #===================================================
+      # router configuration
+      #===================================================
+      - "traefik.http.routers.dashboard.rule=Host(`dashboard.traefik.duongdx.com`)"
+      - "traefik.http.routers.dashboard.entrypoints=webSecure"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      # router <---> middleware configuration
+      - "traefik.http.routers.dashboard.middlewares=traefik-auth,traefik-compress"
+      #===================================================
+      # tls configuration
+      #===================================================
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.tls.certresolver=my-resolver"
+      #===================================================
+      # middlewares configuration
+      #===================================================
+      # echo $(htpasswd -nB duongdx) | sed -e s/\\$/\\$\\$/g
+      # user_1: duongdx
+      # password_1: xxxxxx
+      # user_2: xuanduong
+      # password_1: xxxxxx
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=duongdx:$$2y$$05$$G01EAMot6n2rmushO6v28.auOqg9ayoh7qTK13QDwIuHkwyV/brhG,xuanduong:$$2y$$05$$Yr7IfuW7caBgdMwNPg54MOZB6e38pTB7rv18txQHkotQsBl9OfAUO"
+      - "traefik.http.middlewares.traefik-compress.compress=true"
+
+  frontend:
+    image: "duong1200798/socket_app_react:latest"
+    networks:
+      - frontend-net
+    labels:
+      - "traefik.enable=true"
+      #===================================================
+      # router configuration
+      #===================================================
+      # router-secure: serve on 433
+      - "traefik.http.routers.frontend-secure.rule=Host(`react.duongdx.com`)"
+      - "traefik.http.routers.frontend-secure.entrypoints=webSecure"
+      - "traefik.http.routers.frontend-secure.service=frontend"
+      # router <---> middleware configuration
+      - "traefik.http.routers.frontend-secure.middlewares=frontend-compress,frontend-rateLimit"
+      #===================================================
+      # service configuration
+      #===================================================
+      - "traefik.http.services.frontend.loadbalancer.server.port=8080"
+
+      #===================================================
+      # tls configuration
+      #===================================================
+      - "traefik.http.routers.frontend-secure.tls=true"
+      - "traefik.http.routers.frontend-secure.tls.certresolver=my-resolver"
+
+      #===================================================
+      # middlewares configuration
+      #===================================================
+      # compress config: Enable gzip compression
+      - "traefik.http.middlewares.frontend-compress.compress=true"
+
+      #===================================================
+      # rate limit configuration
+      #
+      # Request Average:
+      # Definition: The average number of requests allowed over a specified period of time.
+      # Purpose: To maintain a steady flow of requests and prevent backend services from being overwhelmed by a sudden surge in traffic.
+      # Implementation: This is usually specified as the number of requests allowed per second, minute, or other time units.
+      # Example: Allowing an average of 100 requests per second.
+      #
+      # Burst:
+      # Definition: The maximum number of requests allowed in a short burst before rate limiting takes effect.
+      # Purpose: To handle sudden, short-term spikes in traffic without immediately throttling or rejecting requests. It allows a temporary surge in traffic above the average rate.
+      # Implementation: This is typically specified as a fixed number of requests that can be allowed in quick succession before rate limiting kicks in.
+      # Example: Allowing a burst of 50 requests in a short period, even if the average rate is set to 100 requests per second.
+      #===================================================
+      - "traefik.http.middlewares.frontend-rateLimit.rateLimit.average=100" # 100 requests/second
+      # - "traefik.http.middlewares.frontend-rateLimit.rateLimit.average=1.67" # 100/60 = 1.67 => 100 requests/minute
+      # - "traefik.http.middlewares.frontend-rateLimit.rateLimit.average=1.67" # 1000/3600 = 0.278 => 0.278 requests/s, 1000 request/hour
+      - "traefik.http.middlewares.frontend-rateLimit.rateLimit.burst=50"
+
+      #===================================================
+      # redirect configuration
+      #===================================================
+      # router-insecure: serve on 80 -> redirect to 433
+      - "traefik.http.routers.frontend-insecure.rule=Host(`react.duongdx.com`)"
+      - "traefik.http.routers.frontend-insecure.entrypoints=web"
+      - "traefik.http.routers.frontend-insecure.service=frontend"
+      - "traefik.http.routers.frontend-insecure.middlewares=frontend-insecure"
+      - "traefik.http.middlewares.frontend-insecure.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.frontend-insecure.redirectscheme.permanent=true"
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - traefik-net
+      - frontend-net  # Added Portainer to frontend-net network
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    labels:
+      - "traefik.enable=true"
+      #===================================================
+      # router configuration
+      #===================================================
+      - "traefik.http.routers.portainer.rule=Host(`portainer.duongdx.com`)"
+      - "traefik.http.routers.portainer.entrypoints=webSecure"
+      - "traefik.http.routers.portainer.service=portainer"
+      #===================================================
+      # service configuration
+      #===================================================
+      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+      #===================================================
+      # tls configuration
+      #===================================================
+      - "traefik.http.routers.portainer.tls=true"
+      - "traefik.http.routers.portainer.tls.certresolver=my-resolver"
+
+      #===================================================
+      # network configuration
+      #
+      # when service have more than 1 network: must specify network
+      #===================================================
+      - "traefik.docker.network=traefik-net"
+    ports:
+      - "9000:9000"
+
+# if traefik don't have access to this network => error
+networks:
+  traefik-net:
+    driver: overlay
+
+  frontend-net:
+    driver: overlay
+
+volumes:
+  portainer_data:

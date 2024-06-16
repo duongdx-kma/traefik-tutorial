@@ -14,10 +14,10 @@ services:
       - /etc/localtime:/etc/localtime:ro # config localtime
       - /var/run/docker.sock:/var/run/docker.sock:ro
       #####################################
-      # this file using traefik.dns.yml
+      # this file using traefik.basic-auth.yml
       #####################################
       - /tmp/acme.json:/letsencrypt/acme.json
-      - ./traefik.dns.yml:/etc/traefik/traefik.yml
+      - ./traefik.basic-auth.yml:/etc/traefik/traefik.yml
     networks:
       - traefik-net
       - frontend-net
@@ -33,7 +33,12 @@ services:
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=my-resolver"
       # middlewares configuration
-      - "traefik.http.middlewares.traefik-auth.basicauth.users=duongdx:$$2y$$05$$G01EAMot6n2rmushO6v28.auOqg9ayoh7qTK13QDwIuHkwyV/brhG"
+      # echo $(htpasswd -nB duongdx) | sed -e s/\\$/\\$\\$/g
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=duongdx:$$2y$$05$$G01EAMot6n2rmushO6v28.auOqg9ayoh7qTK13QDwIuHkwyV/brhG,xuanduong:$$2y$$05$$Yr7IfuW7caBgdMwNPg54MOZB6e38pTB7rv18txQHkotQsBl9OfAUO"
+      # user_1: duongdx
+      # password_1: xxxxxx
+      # user_2: xuanduong
+      # password_1: xxxxxx
 
   frontend:
     image: "duong1200798/socket_app_react:latest"
