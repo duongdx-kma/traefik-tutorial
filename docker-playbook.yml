@@ -10,6 +10,15 @@
         src: ./traefik
         dest: /tmp/
         owner: "{{ ansible_user }}"
+
+    - name: acme.json
+      file:
+        dest: /tmp/acme.json
+        state: touch
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: 0600
+
    # Start: install container runtime
     - name: Uninstall old versions
       apt:
@@ -73,3 +82,40 @@
         name: '{{ ansible_user }}'
         groups: docker
         append: yes
+
+    # create host environment
+    - name: Add environment variable to .bashrc
+      lineinfile:
+        path: /home/{{ ansible_user }}/.bashrc
+        line: "export CF_DNS_API_TOKEN={{ cloudflare_api_token }}"
+        create: yes
+
+    - name: Add environment variable to .profile
+      lineinfile:
+        path: /home/{{ ansible_user }}/.profile
+        line: "export CF_DNS_API_TOKEN={{ cloudflare_api_token }}"
+        create: yes
+
+    - name: Add environment variable to .bashrc
+      lineinfile:
+        path: /home/{{ ansible_user }}/.bashrc
+        line: "export CF_API_EMAIL={{ cloudflare_api_email }}"
+        create: yes
+
+    - name: Add environment variable to .profile
+      lineinfile:
+        path: /home/{{ ansible_user }}/.profile
+        line: "export CF_API_EMAIL={{ cloudflare_api_email }}"
+        create: yes
+
+    # cloudflare create new dns record
+    - name: Create DNS records
+      community.general.cloudflare_dns:
+          zone: "duongdx.com"
+          type: "A"
+          record: "*"
+          content: "{{ ansible_host }}"
+          proxied: "false"
+          ttl: "300"
+          api_token: "{{ cloudflare_api_token }}"
+          state: present

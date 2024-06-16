@@ -1,0 +1,5 @@
+[all]
+traefik ansible_user=ubuntu ansible_host=13.213.68.133 ansible_port=22
+
+[all:vars]
+ansible_ssh_private_key_file=client.pem

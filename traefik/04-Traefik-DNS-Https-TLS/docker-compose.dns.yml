@@ -7,14 +7,17 @@ services:
       - "80:80"
       - "8080:8080"
       - "443:443"
+    environment:
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+      - CF_API_EMAIL=${CF_API_EMAIL}
     volumes:
       - /etc/localtime:/etc/localtime:ro # config localtime
       - /var/run/docker.sock:/var/run/docker.sock:ro
       #####################################
-      # this file using traefik.yml
+      # this file using traefik.dns.yml
       #####################################
       - /tmp/acme.json:/letsencrypt/acme.json
-      - ./traefik.http.yml:/etc/traefik/traefik.yml
+      - ./traefik.dns.yml:/etc/traefik/traefik.yml
     networks:
       - traefik-net
       - frontend-net
@@ -25,7 +28,7 @@ services:
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=my-resolver"
-      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_DASHBOARD_CREDENTIALS}"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=duongdx:$$2y$$05$$G01EAMot6n2rmushO6v28.auOqg9ayoh7qTK13QDwIuHkwyV/brhG"
 
   frontend:
     image: "duong1200798/socket_app_react:latest"
@@ -40,7 +43,7 @@ services:
       #  make https
       - "traefik.http.routers.frontend.tls=true"
       - "traefik.http.routers.frontend.tls.certresolver=my-resolver"
-
+  
   portainer:
     image: portainer/portainer-ce:latest
     volumes:
@@ -57,8 +60,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.portainer.rule=Host(`portainer.duongdx.com`)"
       - "traefik.http.routers.portainer.entrypoints=webSecure"
-      - "traefik.http.routers.service=portainer"
+      - "traefik.http.routers.portainer.service=portainer"
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+      #  make https
       - "traefik.http.routers.portainer.tls=true"
       - "traefik.http.routers.portainer.tls.certresolver=my-resolver"
     ports:

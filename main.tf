@@ -17,6 +17,11 @@ variable path_to_private_key {
   description = "Path public key client.pem"
 }
 
+variable ansible_vault_password {
+  type        = string
+  description = "ansible_vault_password for create data"
+}
+
 locals {
   bucket_result = {
     traefik = {
@@ -99,7 +104,13 @@ data "aws_instance" "ec2_instance" {
 
 resource "null_resource" "run_ansible" {
   provisioner "local-exec" {
-    command = "ansible-playbook -i ${path.module}/inventory ${path.module}/docker-playbook.yml"
+    command = <<EOT
+      echo "Apply ansible playbook............."
+      chmod +x .vault_pass.py
+      export VAULT_PASSWORD=${var.ansible_vault_password}
+
+      ansible-playbook -i ${path.module}/inventory ${path.module}/docker-playbook.yml
+    EOT
   }
 
   triggers = {

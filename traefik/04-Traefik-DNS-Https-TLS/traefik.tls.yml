@@ -1,0 +1,42 @@
+################################################################
+# API and dashboard configuration
+################################################################
+api:
+  # Dashboard
+  #
+  #
+  dashboard: true
+  insecure: true
+################################################################
+# Docker configuration backend
+################################################################
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    watch: true
+    exposedByDefault: false
+################################################################
+# EntryPoints:
+################################################################
+entryPoints:
+  web:
+    address: ":80"
+  webSecure:
+    address: ":443"
+
+################################################################
+# Traefik Logging
+################################################################
+log:
+  level: INFO
+
+################################################################
+# Traefik http
+################################################################
+certificatesResolvers:
+  my-resolver:
+    acme:
+      email: xuanduong.kma@gmail.com
+      storage: /letsencrypt/acme.json
+      httpChallenge: true
+        # entryPoint: web

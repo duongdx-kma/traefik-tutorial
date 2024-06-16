@@ -14,7 +14,7 @@ services:
       # this file using traefik.yml
       #####################################
       - /tmp/acme.json:/letsencrypt/acme.json
-      - ./traefik.http.yml:/etc/traefik/traefik.yml
+      - ./traefik.tls.yml:/etc/traefik/traefik.yml
     networks:
       - traefik-net
       - frontend-net
@@ -40,7 +40,7 @@ services:
       #  make https
       - "traefik.http.routers.frontend.tls=true"
       - "traefik.http.routers.frontend.tls.certresolver=my-resolver"
-
+  
   portainer:
     image: portainer/portainer-ce:latest
     volumes:
